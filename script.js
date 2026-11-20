@@ -24,7 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('webgl-canvas');
   let is3DEnabled = localStorage.getItem('portfolio-3d-enabled') !== 'false';
   let animationFrameId = null;
-  let isSceneVisible = true;
   let isTabVisible = !document.hidden;
   let frameCount = 0;
 
@@ -296,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (enabled) {
-        if (!animationFrameId && isSceneVisible && isTabVisible) {
+        if (!animationFrameId && isTabVisible) {
           clock.start();
           animate();
         }
@@ -323,32 +322,23 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Scroll Travel Parallax & Performance Viewport Culling
+    // Continuous Scroll Travel Parallax (Runs across the entire page without pausing)
     window.addEventListener('scroll', () => {
       const scrollY = window.scrollY || window.pageYOffset;
       const maxScroll = document.documentElement.scrollHeight - window.innerHeight || 1;
       const scrollFraction = scrollY / maxScroll;
       targetCameraZ = 32 + scrollFraction * 18;
 
-      // Throttle: pause rendering when scrolled far below hero section (> 1.25 screen heights)
-      const wasVisible = isSceneVisible;
-      isSceneVisible = scrollY < window.innerHeight * 1.25;
-
-      if (is3DEnabled && isTabVisible) {
-        if (isSceneVisible && !wasVisible && !animationFrameId) {
-          clock.start();
-          animate();
-        } else if (!isSceneVisible && animationFrameId) {
-          cancelAnimationFrame(animationFrameId);
-          animationFrameId = null;
-        }
+      if (is3DEnabled && isTabVisible && !animationFrameId) {
+        clock.start();
+        animate();
       }
     }, { passive: true });
 
-    // Pause when tab is hidden to save laptop & mobile battery
+    // Pause only when tab is hidden/minimized
     document.addEventListener('visibilitychange', () => {
       isTabVisible = !document.hidden;
-      if (is3DEnabled && isSceneVisible) {
+      if (is3DEnabled) {
         if (isTabVisible && !animationFrameId) {
           clock.start();
           animate();
@@ -360,12 +350,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ===============================================================
-    // Animation Render Loop (Optimized for 60fps & Zero Overheating)
+    // Animation Render Loop (Continuous 60fps across the whole page)
     // ===============================================================
     let clock = new THREE.Clock();
 
     const animate = () => {
-      if (!is3DEnabled || !isSceneVisible || !isTabVisible) {
+      if (!is3DEnabled || !isTabVisible) {
         animationFrameId = null;
         return;
       }
