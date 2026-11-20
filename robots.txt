@@ -1,0 +1,6 @@
+# Robots.txt for https://moreabhijit.in
+User-agent: *
+Allow: /
+
+# Sitemap indexing
+Sitemap: https://moreabhijit.in/sitemap.xml

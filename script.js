@@ -1215,13 +1215,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // If FX was muted, enable it so intro speech is heard
     if (!soundEnabled) {
-      soundEnabled = true;
-      const fxToggle = document.getElementById('fx-toggle');
-      if (fxToggle) {
-        fxToggle.innerHTML = '<span class="fx-icon">🔊</span><span class="fx-text">FX ON</span>';
-        fxToggle.classList.add('fx-active');
-        fxToggle.setAttribute('aria-label', 'Sound FX: ON (Click to mute)');
-      }
+      updateFxUi(true, false);
     }
 
     playAudioFx('powerChime');
@@ -1520,32 +1514,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // FX Toggle Handler (User requested: "fx fakt off dist ahe , te click kel ki fx on yet nahi")
+  // Sound Toggle Handler (User requested: "sound icon de fakt chalu ase tr sound on disel nahi tr band disel ass kr")
   const fxToggle = document.getElementById('sound-fx-toggle');
   const soundIcon = document.getElementById('sound-icon');
-  const soundText = fxToggle ? fxToggle.querySelector('.sound-text') : null;
 
   function updateFxUi(enabled, notify = false) {
     soundEnabled = enabled;
     if (fxToggle) {
       if (enabled) {
         fxToggle.classList.add('active');
+        fxToggle.classList.remove('muted');
         if (soundIcon) soundIcon.textContent = '🔊';
-        if (soundText) soundText.textContent = 'FX ON';
-        fxToggle.setAttribute('title', 'Futuristic Sound FX: ON (Click to mute)');
+        fxToggle.setAttribute('title', 'Sound: ON (Click to mute)');
+        fxToggle.setAttribute('aria-label', 'Sound: ON (Click to mute)');
         if (notify) {
           playAudioFx('powerChime');
-          showToast('🔊 Futuristic Sound FX: ON');
+          showToast('🔊 Sound: ON');
         }
       } else {
         fxToggle.classList.remove('active');
-        if (soundIcon) soundIcon.textContent = '🔈';
-        if (soundText) soundText.textContent = 'FX OFF';
-        fxToggle.setAttribute('title', 'Futuristic Sound FX: OFF (Click to unmute)');
+        fxToggle.classList.add('muted');
+        if (soundIcon) soundIcon.textContent = '🔇';
+        fxToggle.setAttribute('title', 'Sound: OFF (Click to unmute)');
+        fxToggle.setAttribute('aria-label', 'Sound: OFF (Click to unmute)');
         stopIntroSpeech();
         if ('speechSynthesis' in window) window.speechSynthesis.cancel();
         if (notify) {
-          showToast('🔈 Sound FX: OFF');
+          showToast('🔇 Sound: OFF');
         }
       }
     }

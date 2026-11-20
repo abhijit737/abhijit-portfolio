@@ -883,6 +883,13 @@ body.theme-3d {
   color: #047857;
 }
 
+[data-theme="light"] .sound-fx-toggle.muted {
+  background: rgba(241, 245, 249, 0.9);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: #94a3b8;
+  box-shadow: none;
+}
+
 [data-theme="light"] .name-audio-btn {
   background: rgba(56, 189, 248, 0.12);
   border-color: rgba(56, 189, 248, 0.4);
@@ -2390,28 +2397,29 @@ select.form-input option {
   transition: width 0.08s ease-out;
 }
 
-/* 2. Audio Effects Toggle */
+/* 2. Audio Effects Toggle (Icon Only) */
 .sound-fx-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.4rem 0.8rem;
+  justify-content: center;
+  width: 36px;
+  height: 34px;
+  padding: 0;
   border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #94a3b8;
-  font-size: 0.76rem;
-  font-weight: 700;
+  color: var(--accent);
+  font-size: 0.95rem;
   cursor: pointer;
   transition: all var(--transition-fast);
   font-family: inherit;
 }
 
 .sound-fx-toggle:hover {
-  background: rgba(110, 231, 183, 0.12);
+  background: rgba(110, 231, 183, 0.15);
   border-color: var(--accent);
   color: var(--accent);
-  box-shadow: 0 0 12px rgba(110, 231, 183, 0.25);
+  box-shadow: 0 0 14px rgba(110, 231, 183, 0.35);
   transform: translateY(-1px);
 }
 
@@ -2420,6 +2428,13 @@ select.form-input option {
   border-color: var(--accent);
   color: var(--accent);
   box-shadow: 0 0 15px rgba(110, 231, 183, 0.4);
+}
+
+.sound-fx-toggle.muted {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #64748b;
+  box-shadow: none;
 }
 
 /* 3. Hero Dynamic Typewriter Subtitle */
