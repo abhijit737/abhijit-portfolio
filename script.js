@@ -445,11 +445,78 @@ document.addEventListener('DOMContentLoaded', () => {
 
     animate();
 
+    // ===============================================================
+    // Responsive 3D Scene Adapter for Desktop & Mobile Screens
+    // ===============================================================
+    function update3DSceneForDevice() {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      const aspect = width / height;
+      const isMobile = width <= 768;
+      const isSmallMobile = width <= 480;
+
+      camera.aspect = aspect;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+      if (isSmallMobile) {
+        // Mobile screen (360px - 480px): Center 3D Core in hero view, scaled cleanly
+        camera.position.z = 46;
+        targetCameraZ = 46;
+        coreGroup.position.set(0, 10, -8);
+        coreGroup.scale.set(0.65, 0.65, 0.65);
+        knotGroup.position.set(0, -18, -10);
+        knotGroup.scale.set(0.6, 0.6, 0.6);
+      } else if (isMobile) {
+        // Tablet / larger mobile
+        camera.position.z = 40;
+        targetCameraZ = 40;
+        coreGroup.position.set(4, 8, -6);
+        coreGroup.scale.set(0.75, 0.75, 0.75);
+        knotGroup.position.set(-6, -14, -8);
+        knotGroup.scale.set(0.75, 0.75, 0.75);
+      } else {
+        // Desktop
+        camera.position.z = 32;
+        targetCameraZ = 32;
+        coreGroup.position.set(18, 3, -6);
+        coreGroup.scale.set(1, 1, 1);
+        knotGroup.position.set(-22, -8, -10);
+        knotGroup.scale.set(1, 1, 1);
+      }
+    }
+
+    update3DSceneForDevice();
+
+    // Mobile Touch Physics & 3D Interactive Parallax
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches && e.touches.length > 0) {
+        const touch = e.touches[0];
+        mouseX = (touch.clientX / window.innerWidth - 0.5) * 2;
+        mouseY = (touch.clientY / window.innerHeight - 0.5) * 2;
+        mouseLight.position.x = mouseX * 20;
+        mouseLight.position.y = -mouseY * 20;
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchstart', (e) => {
+      if (e.touches && e.touches.length > 0) {
+        const touch = e.touches[0];
+        mouseX = (touch.clientX / window.innerWidth - 0.5) * 2;
+        mouseY = (touch.clientY / window.innerHeight - 0.5) * 2;
+        shockwaveOrigin.x = mouseX * 25;
+        shockwaveOrigin.y = -mouseY * 25;
+        shockwaveOrigin.z = 0;
+        shockwaveRadius = 0;
+        shockwaveStrength = 4.0;
+        shockwaveActive = true;
+      }
+    }, { passive: true });
+
     // Resize Handler
     window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      update3DSceneForDevice();
     });
   }
 
@@ -1135,49 +1202,61 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Dedicated Male Voice Selector (User requested: "male cha avaj ala pahije")
+  // Dedicated Alpha Male Voice Selector (User requested: "voice alpha male cha thev... indian accent mdhe thev indian male 30 years old cha thev")
   function getMaleVoice(voices) {
     if (!voices || !voices.length) return null;
 
     const femaleKeywords = [
-      'zira', 'jenny', 'samantha', 'heera', 'neerja', 'victoria', 'susan', 
-      'kavya', 'aria', 'female', 'woman', 'girl', 'catherine', 'hazel', 'linda', 'anna'
+      'female', 'woman', 'girl', 'zira', 'jenny', 'samantha', 'heera', 'neerja',
+      'victoria', 'susan', 'kavya', 'aria', 'catherine', 'hazel', 'linda', 'anna',
+      'veena', 'priya', 'ananya', 'aditi', 'kalpana', 'deepa', 'shruti', 'sonia'
     ];
-    const maleKeywords = [
-      'david', 'mark', 'prabhat', 'ravi', 'guy', 'christopher', 'eric', 
-      'ryan', 'andrew', 'brian', 'george', 'male', 'man', 'boy', 'steffan', 'james', 'richard'
+    const indianMaleNames = [
+      'ravi', 'prabhat', 'madhur', 'aarav', 'karan', 'manish', 'anil', 'raj',
+      'arjun', 'rahul', 'amit', 'vikram', 'dev', 'sanjay', 'rohit', 'ajay', 'sachin'
+    ];
+    const matureMaleNames = [
+      'david', 'mark', 'guy', 'christopher', 'eric', 'ryan', 'brian', 'george',
+      'richard', 'james', 'thomas', 'steffan', 'charles', 'male', 'man'
     ];
 
-    // Priority 1: Indian English Male voice (e.g. Prabhat, Ravi)
-    const indianMale = voices.find(v => 
-      (v.lang.startsWith('en-IN') || v.lang.startsWith('hi')) &&
-      maleKeywords.some(k => v.name.toLowerCase().includes(k)) &&
-      !femaleKeywords.some(k => v.name.toLowerCase().includes(k))
-    );
-    if (indianMale) return indianMale;
+    // Priority 1: Explicit Indian Male Voice (e.g., Ravi, Prabhat, Madhur)
+    const exactIndianMale = voices.find(v => {
+      const name = v.name.toLowerCase();
+      const lang = (v.lang || '').toLowerCase();
+      const isIndian = lang.includes('in') || lang.includes('hi') || name.includes('india');
+      const isNamed = indianMaleNames.some(m => name.includes(m));
+      const notFemale = !femaleKeywords.some(f => name.includes(f));
+      return isIndian && isNamed && notFemale;
+    });
+    if (exactIndianMale) return exactIndianMale;
 
-    // Priority 2: Natural / Online Male voice
-    const naturalMale = voices.find(v => 
-      v.lang.startsWith('en') &&
-      (v.name.toLowerCase().includes('natural') || v.name.toLowerCase().includes('google')) &&
-      maleKeywords.some(k => v.name.toLowerCase().includes(k)) &&
-      !femaleKeywords.some(k => v.name.toLowerCase().includes(k))
-    );
-    if (naturalMale) return naturalMale;
+    // Priority 2: Any Indian English/Hindi voice that is not female
+    const anyIndianMale = voices.find(v => {
+      const name = v.name.toLowerCase();
+      const lang = (v.lang || '').toLowerCase();
+      const isIndian = lang.includes('in') || lang.includes('hi') || name.includes('india');
+      const notFemale = !femaleKeywords.some(f => name.includes(f));
+      return isIndian && notFemale;
+    });
+    if (anyIndianMale) return anyIndianMale;
 
-    // Priority 3: Standard Windows / OS Desktop Male voice (e.g. Microsoft David, Microsoft Mark)
-    const desktopMale = voices.find(v => 
-      v.lang.startsWith('en') &&
-      maleKeywords.some(k => v.name.toLowerCase().includes(k)) &&
-      !femaleKeywords.some(k => v.name.toLowerCase().includes(k))
-    );
-    if (desktopMale) return desktopMale;
+    // Priority 3: Deep Alpha Male Voice (e.g. Microsoft David, Microsoft Mark)
+    const deepMale = voices.find(v => {
+      const name = v.name.toLowerCase();
+      const lang = (v.lang || '').toLowerCase();
+      const isMale = matureMaleNames.some(m => name.includes(m));
+      const notFemale = !femaleKeywords.some(f => name.includes(f));
+      return lang.startsWith('en') && isMale && notFemale;
+    });
+    if (deepMale) return deepMale;
 
-    // Priority 4: Any English voice that is explicitly not female
-    const nonFemale = voices.find(v => 
-      v.lang.startsWith('en') &&
-      !femaleKeywords.some(k => v.name.toLowerCase().includes(k))
-    );
+    // Priority 4: Any non-female English voice
+    const nonFemale = voices.find(v => {
+      const name = v.name.toLowerCase();
+      const lang = (v.lang || '').toLowerCase();
+      return lang.startsWith('en') && !femaleKeywords.some(f => name.includes(f));
+    });
     if (nonFemale) return nonFemale;
 
     return voices[0];
@@ -1244,8 +1323,9 @@ document.addEventListener('DOMContentLoaded', () => {
         .replace(/\bMore\b/g, 'Moh-ray');
 
       const utterance = new SpeechSynthesisUtterance(spokenText);
-      utterance.rate = 0.94; // Clear, confident pacing
-      utterance.pitch = 0.92; // Deep, masculine voice
+      utterance.lang = 'en-IN'; // Indian English accent
+      utterance.rate = 0.88;    // Confident, measured executive pacing (30-year-old tech architect)
+      utterance.pitch = 0.78;   // Deep, resonant, authoritative Alpha Male chest baritone (no boyish pitch)
       utterance.volume = 1.0;
 
       const voices = window.speechSynthesis.getVoices();
@@ -1287,9 +1367,6 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       window.speechSynthesis.cancel(); // Stop any pending speech
 
-      // Accurate phonetic pronunciation mapping for Marathi surname 'More' (मोरे)
-      // English TTS engines natively read "More" as "Moor" (/mɔːr/).
-      // Substituting with "Moh-ray" produces the exact, authentic Marathi "मोरे" sound.
       const spokenText = text
         .replace(/\bAbhijit More's\b/gi, 'Abhijit Moh-ray\'s')
         .replace(/\bAbhijit More\b/gi, 'Abhijit Moh-ray')
@@ -1297,11 +1374,11 @@ document.addEventListener('DOMContentLoaded', () => {
         .replace(/\bMore\b/g, 'Moh-ray');
 
       const utterance = new SpeechSynthesisUtterance(spokenText);
-      utterance.rate = 0.98; // Natural, confident pacing
-      utterance.pitch = 0.92; // Deep, confident masculine pitch (Male voice)
+      utterance.lang = 'en-IN';
+      utterance.rate = 0.90;
+      utterance.pitch = 0.80; // Deep alpha male pitch
       utterance.volume = 1.0;
 
-      // Select Male Voice
       const voices = window.speechSynthesis.getVoices();
       const maleVoice = getMaleVoice(voices);
       if (maleVoice) {

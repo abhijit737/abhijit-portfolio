@@ -142,13 +142,14 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css" />
 
   <!-- Stylesheet with Cache Busting -->
-  <link rel="stylesheet" href="style.css?v=20261121_seo_sound" />
+  <link rel="stylesheet" href="style.css?v=20261121_mobile_alpha_voice" />
 
   <!-- Critical Inlined Layout for 8 Orbiting Chips & Skills Badges to Prevent Any Cache Lag -->
   <style>
     .avatar-wrapper {
       position: relative !important;
       overflow: visible !important;
+      transform-origin: center center !important;
     }
     .chip-1 { top: -55px !important; left: 50% !important; transform: translateX(-50%) translateZ(45px) !important; animation: floatTop 4s ease-in-out infinite !important; }
     .chip-2 { top: 5px !important; right: -115px !important; transform: translateZ(45px) !important; animation: float3D 4s ease-in-out infinite !important; }
@@ -159,6 +160,26 @@
     .chip-7 { top: 100px !important; left: -140px !important; transform: translateZ(45px) !important; animation: float3D 4s ease-in-out infinite !important; }
     .chip-8 { top: 5px !important; left: -115px !important; transform: translateZ(45px) !important; animation: float3D 4s ease-in-out infinite !important; }
     .chip-1:hover, .chip-5:hover { transform: translateX(-50%) translateZ(60px) scale(1.08) !important; }
+
+    /* Mobile scaling for orbiting chips to eliminate overflow while preserving 3D orbit */
+    @media (max-width: 768px) {
+      .avatar-container {
+        margin: 2.25rem auto 1.5rem !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 100% !important;
+        overflow: visible !important;
+      }
+      .avatar-wrapper {
+        transform: scale(0.8) !important;
+      }
+    }
+    @media (max-width: 480px) {
+      .avatar-wrapper {
+        transform: scale(0.68) !important;
+      }
+    }
 
     /* Skills Section Clean Spacing & Dark Glass Capsules */
     #skills {
@@ -1540,6 +1561,6 @@
   <div class="toast" id="toast"></div>
 
   <!-- JavaScript with Cache Busting -->
-  <script src="script.js?v=20261121_seo_sound"></script>
+  <script src="script.js?v=20261121_mobile_alpha_voice"></script>
 </body>
 </html>
