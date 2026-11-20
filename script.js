@@ -1403,7 +1403,7 @@ document.addEventListener('DOMContentLoaded', () => {
     playAudioFx('powerChime');
 
     if (!introAudio) {
-      introAudio = new Audio('intro-abhijit.mp3?v=20261121_alpha30');
+      introAudio = new Audio('intro-abhijit.mp3?v=20261121_mohray_re');
       introAudio.preload = 'auto';
 
       introAudio.addEventListener('ended', () => {
