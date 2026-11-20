@@ -22,7 +22,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // 1. Three.js Interactive 3D Cyber Constellation & WebGL Engine
   // ===================================================================
   const canvas = document.getElementById('webgl-canvas');
-  let speedMultiplier = 1;
+  let is3DEnabled = localStorage.getItem('portfolio-3d-enabled') !== 'false';
+  let animationFrameId = null;
+  let isSceneVisible = true;
+  let isTabVisible = !document.hidden;
+  let frameCount = 0;
 
   if (canvas && typeof THREE !== 'undefined') {
     const scene = new THREE.Scene();
@@ -148,9 +152,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ===============================================================
-    // Particle Constellation Network
+    // Particle Constellation Network (Performance Optimized)
     // ===============================================================
-    const particleCount = 750;
+    const particleCount = 260;
     const particlePositions = new Float32Array(particleCount * 3);
     const particleHomePositions = new Float32Array(particleCount * 3);
     const particleVelocities = new Float32Array(particleCount * 3);
@@ -260,95 +264,175 @@ document.addEventListener('DOMContentLoaded', () => {
       shockwaveActive = true;
     });
 
-    // Toggle 3D Speed on badge click
+    // 3D Engine Toggle State & Handler
+    // (User requested: "fakt 3D by default thev ani tyavr click kel te disale hoil ajun ekda click kel tr enable hoil ass kr")
     const toggle3DBtn = document.getElementById('toggle-3d-speed');
     const badgeText = toggle3DBtn ? toggle3DBtn.querySelector('.badge-3d-text') : null;
 
-    if (toggle3DBtn) {
-      toggle3DBtn.addEventListener('click', () => {
-        if (speedMultiplier === 1) {
-          speedMultiplier = 2.5;
-          if (badgeText) badgeText.textContent = 'WARP 3D';
-          showToast('⚡ Warp Speed 3D Activated!');
-        } else if (speedMultiplier === 2.5) {
-          speedMultiplier = 5;
-          if (badgeText) badgeText.textContent = 'HYPER 3D';
-          showToast('🚀 Hyperdrive 3D Engaged!');
+    function apply3DState(enabled, notify = false) {
+      is3DEnabled = enabled;
+      localStorage.setItem('portfolio-3d-enabled', enabled ? 'true' : 'false');
+
+      if (toggle3DBtn) {
+        if (enabled) {
+          toggle3DBtn.classList.add('active');
+          toggle3DBtn.classList.remove('muted');
+          toggle3DBtn.setAttribute('title', '3D Graphics: ON (Click to disable 3D & save battery)');
+          toggle3DBtn.setAttribute('aria-label', '3D Graphics: ON (Click to disable 3D)');
         } else {
-          speedMultiplier = 1;
-          if (badgeText) badgeText.textContent = '3D LIVE';
-          showToast('✨ Normal 3D Orbit Restored');
+          toggle3DBtn.classList.remove('active');
+          toggle3DBtn.classList.add('muted');
+          toggle3DBtn.setAttribute('title', '3D Graphics: OFF (Click to enable 3D)');
+          toggle3DBtn.setAttribute('aria-label', '3D Graphics: OFF (Click to enable 3D)');
         }
+      }
+
+      if (badgeText) {
+        badgeText.textContent = enabled ? '3D ON' : '3D OFF';
+      }
+
+      if (canvas) {
+        canvas.style.display = enabled ? 'block' : 'none';
+      }
+
+      if (enabled) {
+        if (!animationFrameId && isSceneVisible && isTabVisible) {
+          clock.start();
+          animate();
+        }
+        if (notify) {
+          playAudioFx('powerChime');
+          showToast('🧊 3D Graphics: ON');
+        }
+      } else {
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+          animationFrameId = null;
+        }
+        if (notify) {
+          playAudioFx('laserTick');
+          showToast('🧊 3D Graphics: OFF (Battery Saver Mode)');
+        }
+      }
+    }
+
+    if (toggle3DBtn) {
+      toggle3DBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        apply3DState(!is3DEnabled, true);
       });
     }
 
-    // Scroll Travel Parallax
+    // Scroll Travel Parallax & Performance Viewport Culling
     window.addEventListener('scroll', () => {
+      const scrollY = window.scrollY || window.pageYOffset;
       const maxScroll = document.documentElement.scrollHeight - window.innerHeight || 1;
-      const scrollFraction = window.scrollY / maxScroll;
+      const scrollFraction = scrollY / maxScroll;
       targetCameraZ = 32 + scrollFraction * 18;
+
+      // Throttle: pause rendering when scrolled far below hero section (> 1.25 screen heights)
+      const wasVisible = isSceneVisible;
+      isSceneVisible = scrollY < window.innerHeight * 1.25;
+
+      if (is3DEnabled && isTabVisible) {
+        if (isSceneVisible && !wasVisible && !animationFrameId) {
+          clock.start();
+          animate();
+        } else if (!isSceneVisible && animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+          animationFrameId = null;
+        }
+      }
+    }, { passive: true });
+
+    // Pause when tab is hidden to save laptop & mobile battery
+    document.addEventListener('visibilitychange', () => {
+      isTabVisible = !document.hidden;
+      if (is3DEnabled && isSceneVisible) {
+        if (isTabVisible && !animationFrameId) {
+          clock.start();
+          animate();
+        } else if (!isTabVisible && animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+          animationFrameId = null;
+        }
+      }
     });
 
     // ===============================================================
-    // Animation Render Loop
+    // Animation Render Loop (Optimized for 60fps & Zero Overheating)
     // ===============================================================
     let clock = new THREE.Clock();
 
     const animate = () => {
-      requestAnimationFrame(animate);
+      if (!is3DEnabled || !isSceneVisible || !isTabVisible) {
+        animationFrameId = null;
+        return;
+      }
+      animationFrameId = requestAnimationFrame(animate);
+      frameCount++;
+
       const delta = clock.getDelta();
-      const elapsedTime = clock.getElapsedTime() * speedMultiplier;
+      const elapsedTime = clock.getElapsedTime();
 
       // 1. Camera interpolation (lerp)
-      targetCameraX += (mouseX * 6 - targetCameraX) * 0.05;
-      targetCameraY += (-mouseY * 6 - targetCameraY) * 0.05;
+      targetCameraX += (mouseX * 5 - targetCameraX) * 0.05;
+      targetCameraY += (-mouseY * 5 - targetCameraY) * 0.05;
       camera.position.x = targetCameraX;
       camera.position.y = targetCameraY;
       camera.position.z += (targetCameraZ - camera.position.z) * 0.05;
       camera.lookAt(scene.position);
 
       // 2. Mouse Light tracking in 3D
-      mouseLight.position.x = mouseX * 26;
-      mouseLight.position.y = -mouseY * 26;
+      mouseLight.position.x = mouseX * 24;
+      mouseLight.position.y = -mouseY * 24;
 
-      secondaryLight.position.x = -Math.cos(elapsedTime * 0.4) * 25;
-      secondaryLight.position.y = Math.sin(elapsedTime * 0.4) * 20;
+      secondaryLight.position.x = -Math.cos(elapsedTime * 0.35) * 25;
+      secondaryLight.position.y = Math.sin(elapsedTime * 0.35) * 20;
 
-      // 3. Rotate 3D Cyber Core
-      coreMesh.rotation.x = elapsedTime * 0.18;
-      coreMesh.rotation.y = elapsedTime * 0.22;
-      coreWireMesh.rotation.x = elapsedTime * 0.18;
-      coreWireMesh.rotation.y = elapsedTime * 0.22;
-      coreRing.rotation.z = -elapsedTime * 0.25;
+      // 3. Rotate 3D Cyber Core (only if visible)
+      if (coreGroup.visible) {
+        coreMesh.rotation.x = elapsedTime * 0.18;
+        coreMesh.rotation.y = elapsedTime * 0.22;
+        coreWireMesh.rotation.x = elapsedTime * 0.18;
+        coreWireMesh.rotation.y = elapsedTime * 0.22;
+        coreRing.rotation.z = -elapsedTime * 0.25;
+      }
 
-      // 4. Rotate Torus Knot
-      knotMesh.rotation.x = elapsedTime * 0.12;
-      knotMesh.rotation.y = elapsedTime * 0.15;
-      knotWire.rotation.x = elapsedTime * 0.12;
-      knotWire.rotation.y = elapsedTime * 0.15;
+      // 4. Rotate Torus Knot (only if visible)
+      if (knotGroup.visible) {
+        knotMesh.rotation.x = elapsedTime * 0.12;
+        knotMesh.rotation.y = elapsedTime * 0.15;
+        knotWire.rotation.x = elapsedTime * 0.12;
+        knotWire.rotation.y = elapsedTime * 0.15;
+      }
 
-      // 5. Tumble floating polyhedrons
-      polyMeshes.forEach((item, idx) => {
-        item.group.rotation.x += item.rot[0] * speedMultiplier;
-        item.group.rotation.y += item.rot[1] * speedMultiplier;
-        item.group.position.y = item.basePos[1] + Math.sin(elapsedTime * 0.8 + idx) * 1.5;
-      });
+      // 5. Tumble floating polyhedrons (only if visible)
+      if (polyMeshes.length > 0 && polyMeshes[0].group.visible) {
+        polyMeshes.forEach((item, idx) => {
+          item.group.rotation.x += item.rot[0];
+          item.group.rotation.y += item.rot[1];
+          item.group.position.y = item.basePos[1] + Math.sin(elapsedTime * 0.8 + idx) * 1.5;
+        });
+      }
 
       // 6. Particle Physics (Gentle drift + Mouse Repulsion + Shockwave)
-      const mouseWorldX = mouseX * 26;
-      const mouseWorldY = -mouseY * 26;
+      const mouseWorldX = mouseX * 24;
+      const mouseWorldY = -mouseY * 24;
       const posAttr = particleGeometry.attributes.position;
       const posArr = posAttr.array;
 
       if (shockwaveActive) {
-        shockwaveRadius += delta * 45 * speedMultiplier;
+        shockwaveRadius += delta * 45;
         shockwaveStrength *= 0.95;
         if (shockwaveRadius > 55 || shockwaveStrength < 0.05) {
           shockwaveActive = false;
         }
       }
 
-      for (let i = 0; i < particleCount; i++) {
+      const activeParticleLimit = window.innerWidth <= 768 ? 90 : particleCount;
+
+      for (let i = 0; i < activeParticleLimit; i++) {
         const i3 = i * 3;
         let px = posArr[i3];
         let py = posArr[i3 + 1];
@@ -359,17 +443,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const hz = particleHomePositions[i3 + 2];
 
         // Drift
-        px += particleVelocities[i3] * speedMultiplier;
-        py += particleVelocities[i3 + 1] * speedMultiplier;
+        px += particleVelocities[i3];
+        py += particleVelocities[i3 + 1];
 
         // Mouse Repulsion Field
         const dx = px - mouseWorldX;
         const dy = py - mouseWorldY;
         const distSq = dx * dx + dy * dy;
 
-        if (distSq < 70) {
+        if (distSq < 65) {
           const dist = Math.sqrt(distSq) || 0.1;
-          const force = (1 - dist / 8.4) * 0.8;
+          const force = (1 - dist / 8.0) * 0.7;
           px += (dx / dist) * force;
           py += (dy / dist) * force;
         }
@@ -399,51 +483,53 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       posAttr.needsUpdate = true;
 
-      // 7. Update Dynamic Constellation Lines
-      let lineVertexIndex = 0;
-      const linePosArr = lineGeometry.attributes.position.array;
-      const checkLimit = Math.min(particleCount, 250); // fast subset check for 60fps
+      // 7. Update Dynamic Constellation Lines (Only on Desktop, and only every 3rd frame)
+      const isMobileDevice = window.innerWidth <= 768;
+      if (!isMobileDevice && frameCount % 3 === 0) {
+        let lineVertexIndex = 0;
+        const linePosArr = lineGeometry.attributes.position.array;
+        const checkLimit = Math.min(particleCount, 95);
 
-      for (let i = 0; i < checkLimit && lineVertexIndex < maxLineConnections * 6; i++) {
-        const i3 = i * 3;
-        const x1 = posArr[i3];
-        const y1 = posArr[i3 + 1];
-        const z1 = posArr[i3 + 2];
+        for (let i = 0; i < checkLimit && lineVertexIndex < maxLineConnections * 6; i++) {
+          const i3 = i * 3;
+          const x1 = posArr[i3];
+          const y1 = posArr[i3 + 1];
+          const z1 = posArr[i3 + 2];
 
-        for (let j = i + 1; j < checkLimit && lineVertexIndex < maxLineConnections * 6; j++) {
-          const j3 = j * 3;
-          const x2 = posArr[j3];
-          const y2 = posArr[j3 + 1];
-          const z2 = posArr[j3 + 2];
+          for (let j = i + 1; j < checkLimit && lineVertexIndex < maxLineConnections * 6; j++) {
+            const j3 = j * 3;
+            const x2 = posArr[j3];
+            const y2 = posArr[j3 + 1];
+            const z2 = posArr[j3 + 2];
 
-          const ddx = x1 - x2;
-          const ddy = y1 - y2;
-          const ddz = z1 - z2;
-          const distSq = ddx * ddx + ddy * ddy + ddz * ddz;
+            const ddx = x1 - x2;
+            const ddy = y1 - y2;
+            const ddz = z1 - z2;
+            const distSq = ddx * ddx + ddy * ddy + ddz * ddz;
 
-          if (distSq < 42) {
-            linePosArr[lineVertexIndex++] = x1;
-            linePosArr[lineVertexIndex++] = y1;
-            linePosArr[lineVertexIndex++] = z1;
-            linePosArr[lineVertexIndex++] = x2;
-            linePosArr[lineVertexIndex++] = y2;
-            linePosArr[lineVertexIndex++] = z2;
+            if (distSq < 38) {
+              linePosArr[lineVertexIndex++] = x1;
+              linePosArr[lineVertexIndex++] = y1;
+              linePosArr[lineVertexIndex++] = z1;
+              linePosArr[lineVertexIndex++] = x2;
+              linePosArr[lineVertexIndex++] = y2;
+              linePosArr[lineVertexIndex++] = z2;
+            }
           }
         }
-      }
 
-      // Zero out unused line segments
-      for (let k = lineVertexIndex; k < maxLineConnections * 6; k++) {
-        linePosArr[k] = 0;
+        for (let k = lineVertexIndex; k < maxLineConnections * 6; k++) {
+          linePosArr[k] = 0;
+        }
+        lineGeometry.setDrawRange(0, lineVertexIndex / 3);
+        lineGeometry.attributes.position.needsUpdate = true;
+      } else if (isMobileDevice) {
+        lineGeometry.setDrawRange(0, 0);
       }
-      lineGeometry.setDrawRange(0, lineVertexIndex / 3);
-      lineGeometry.attributes.position.needsUpdate = true;
 
       // Render Scene
       renderer.render(scene, camera);
     };
-
-    animate();
 
     // ===============================================================
     // Responsive 3D Scene Adapter for Desktop & Mobile Screens
@@ -453,41 +539,44 @@ document.addEventListener('DOMContentLoaded', () => {
       const height = window.innerHeight;
       const aspect = width / height;
       const isMobile = width <= 768;
-      const isSmallMobile = width <= 480;
 
       camera.aspect = aspect;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-      if (isSmallMobile) {
-        // Mobile screen (360px - 480px): Center 3D Core in hero view, scaled cleanly
-        camera.position.z = 46;
-        targetCameraZ = 46;
-        coreGroup.position.set(0, 10, -8);
-        coreGroup.scale.set(0.65, 0.65, 0.65);
-        knotGroup.position.set(0, -18, -10);
-        knotGroup.scale.set(0.6, 0.6, 0.6);
-      } else if (isMobile) {
-        // Tablet / larger mobile
-        camera.position.z = 40;
-        targetCameraZ = 40;
-        coreGroup.position.set(4, 8, -6);
-        coreGroup.scale.set(0.75, 0.75, 0.75);
-        knotGroup.position.set(-6, -14, -8);
-        knotGroup.scale.set(0.75, 0.75, 0.75);
+      if (isMobile) {
+        // MOBILE OPTIMIZATION & TEXT CLARITY:
+        // Hide wireframe meshes so they NEVER overlap "Hello, I'm Abhijit More" or hero text!
+        coreGroup.visible = false;
+        knotGroup.visible = false;
+        polyMeshes.forEach(p => p.group.visible = false);
+        lineMesh.visible = false;
+
+        // Cap pixel ratio to 1.0 on mobile to stop device heating & battery drain
+        renderer.setPixelRatio(1.0);
+        camera.position.z = 36;
+        targetCameraZ = 36;
       } else {
-        // Desktop
-        camera.position.z = 32;
-        targetCameraZ = 32;
+        // DESKTOP:
+        // Show 3D objects in dedicated margins away from content
+        coreGroup.visible = true;
+        knotGroup.visible = true;
+        polyMeshes.forEach(p => p.group.visible = true);
+        lineMesh.visible = true;
+
         coreGroup.position.set(18, 3, -6);
         coreGroup.scale.set(1, 1, 1);
         knotGroup.position.set(-22, -8, -10);
         knotGroup.scale.set(1, 1, 1);
+
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        camera.position.z = 32;
+        targetCameraZ = 32;
       }
     }
 
     update3DSceneForDevice();
+    apply3DState(is3DEnabled, false);
 
     // Mobile Touch Physics & 3D Interactive Parallax
     window.addEventListener('touchmove', (e) => {
@@ -1267,14 +1356,28 @@ document.addEventListener('DOMContentLoaded', () => {
     return voices[0];
   }
 
-  // Intro Speech Toggle State
-  let isIntroSpeaking = false;
+  // ===================================================================
+  // 6. Studio-Quality 30yo Indian Male Voice & Audio Engine
+  // ===================================================================
+  let introAudio = null;
+  let isIntroAudioPlaying = false;
+  let confidentialAudio = null;
 
   function stopIntroSpeech() {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
+    if (introAudio && isIntroAudioPlaying) {
+      try {
+        introAudio.pause();
+        introAudio.currentTime = 0;
+      } catch (e) {}
     }
-    isIntroSpeaking = false;
+    isIntroAudioPlaying = false;
+
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {}
+    }
+
     const nameBtn = document.getElementById('play-name-audio');
     if (nameBtn) {
       nameBtn.classList.remove('playing');
@@ -1290,12 +1393,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     initAudio();
 
-    // If already speaking, STOP the intro! (User request: "tyavr prt click kel tr intro stop kr")
-    if (isIntroSpeaking || (window.speechSynthesis && window.speechSynthesis.speaking && isIntroSpeaking)) {
+    const nameBtn = document.getElementById('play-name-audio');
+
+    // If currently playing, STOP the intro! (User request: "tyavr prt click kel tr intro stop kr")
+    if (isIntroAudioPlaying && introAudio) {
       stopIntroSpeech();
       playAudioFx('laserTick');
       return;
     }
+
+    // Stop any existing speech or audio
+    stopIntroSpeech();
 
     // If FX was muted, enable it so intro speech is heard
     if (!soundEnabled) {
@@ -1303,103 +1411,88 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     playAudioFx('powerChime');
-    isIntroSpeaking = true;
 
-    const nameBtn = document.getElementById('play-name-audio');
-    if (nameBtn) {
-      nameBtn.classList.add('playing');
-      nameBtn.setAttribute('title', "Speaking intro... Click again to stop");
-      nameBtn.setAttribute('aria-label', "Stop Abhijit More introduction");
+    if (!introAudio) {
+      introAudio = new Audio('intro-abhijit.mp3?v=20261121_alpha30');
+      introAudio.preload = 'auto';
+
+      introAudio.addEventListener('ended', () => {
+        isIntroAudioPlaying = false;
+        if (nameBtn) {
+          nameBtn.classList.remove('playing');
+          nameBtn.setAttribute('title', "Click to listen to Abhijit's intro (Click again to stop)");
+          nameBtn.setAttribute('aria-label', "Listen to Abhijit More introduction");
+        }
+      });
+
+      introAudio.addEventListener('error', () => {
+        isIntroAudioPlaying = false;
+        if (nameBtn) nameBtn.classList.remove('playing');
+        fallbackSpeechIntro();
+      });
     }
 
-    if (!('speechSynthesis' in window)) return;
-
     try {
-      window.speechSynthesis.cancel();
-
-      // Intro text matching user's exact specification:
-      // "mazya inro sang- name , fullstack software engineer with 4.5 professional and 7 years personal experiance in Digital Solutions providing to customers . please check below projects and my contribution in it."
-      const introRaw = "Hello, I am Abhijit More. Full Stack Software Engineer with 4.5 years of professional and 7 years of personal experience in providing digital solutions to customers. Please check below projects and my contribution in it.";
-
-      const spokenText = introRaw
-        .replace(/\bAbhijit More's\b/gi, "Abhijit Moh-ray's")
-        .replace(/\bAbhijit More\b/gi, 'Abhijit Moh-ray')
-        .replace(/\bMore's\b/gi, "Moh-ray's")
-        .replace(/\bMore\b/g, 'Moh-ray');
-
-      const utterance = new SpeechSynthesisUtterance(spokenText);
-      utterance.lang = 'en-IN'; // Indian English accent
-      utterance.rate = 0.88;    // Confident, measured executive pacing (30-year-old tech architect)
-      utterance.pitch = 0.78;   // Deep, resonant, authoritative Alpha Male chest baritone (no boyish pitch)
-      utterance.volume = 1.0;
-
-      const voices = window.speechSynthesis.getVoices();
-      const maleVoice = getMaleVoice(voices);
-      if (maleVoice) {
-        utterance.voice = maleVoice;
+      introAudio.currentTime = 0;
+      const playPromise = introAudio.play();
+      isIntroAudioPlaying = true;
+      if (nameBtn) {
+        nameBtn.classList.add('playing');
+        nameBtn.setAttribute('title', "Speaking intro... Click again to stop");
+        nameBtn.setAttribute('aria-label', "Stop Abhijit More introduction");
       }
 
-      utterance.onend = () => {
-        isIntroSpeaking = false;
-        if (nameBtn) {
-          nameBtn.classList.remove('playing');
-          nameBtn.setAttribute('title', "Click to listen to Abhijit's intro (Click again to stop)");
-          nameBtn.setAttribute('aria-label', "Listen to Abhijit More introduction");
-        }
-      };
-
-      utterance.onerror = () => {
-        isIntroSpeaking = false;
-        if (nameBtn) {
-          nameBtn.classList.remove('playing');
-          nameBtn.setAttribute('title', "Click to listen to Abhijit's intro (Click again to stop)");
-          nameBtn.setAttribute('aria-label', "Listen to Abhijit More introduction");
-        }
-      };
-
-      window.speechSynthesis.speak(utterance);
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          isIntroAudioPlaying = false;
+          if (nameBtn) nameBtn.classList.remove('playing');
+          fallbackSpeechIntro();
+        });
+      }
     } catch (err) {
-      isIntroSpeaking = false;
-      if (nameBtn) nameBtn.classList.remove('playing');
+      fallbackSpeechIntro();
     }
   }
 
-  // Special AI Voice Synthesizer (SpeechSynthesis)
-  function speakSpecialVoice(text) {
-    if (!soundEnabled) return; // Honor sound toggle!
-    if (isIntroSpeaking) return; // Do not interrupt full intro speech with incidental sounds!
-    if (!('speechSynthesis' in window) || !text) return;
+  function fallbackSpeechIntro() {
+    if (!('speechSynthesis' in window)) return;
     try {
-      window.speechSynthesis.cancel(); // Stop any pending speech
-
-      const spokenText = text
-        .replace(/\bAbhijit More's\b/gi, 'Abhijit Moh-ray\'s')
-        .replace(/\bAbhijit More\b/gi, 'Abhijit Moh-ray')
-        .replace(/\bMore's\b/gi, 'Moh-ray\'s')
-        .replace(/\bMore\b/g, 'Moh-ray');
-
+      window.speechSynthesis.cancel();
+      const spokenText = "Hello, I am Abhijit Moh-ray. Full Stack Software Engineer with 4.5 years of professional and 7 years of personal experience in providing digital solutions to customers. Please check below projects and my contribution in it.";
       const utterance = new SpeechSynthesisUtterance(spokenText);
       utterance.lang = 'en-IN';
-      utterance.rate = 0.90;
-      utterance.pitch = 0.80; // Deep alpha male pitch
-      utterance.volume = 1.0;
-
+      utterance.rate = 0.88;
+      utterance.pitch = 0.78;
       const voices = window.speechSynthesis.getVoices();
       const maleVoice = getMaleVoice(voices);
-      if (maleVoice) {
-        utterance.voice = maleVoice;
-      }
+      if (maleVoice) utterance.voice = maleVoice;
 
       const nameBtn = document.getElementById('play-name-audio');
-      if (nameBtn && (text.includes('Abhijit') || text.includes('More'))) {
+      if (nameBtn) {
         nameBtn.classList.add('playing');
         utterance.onend = () => nameBtn.classList.remove('playing');
         utterance.onerror = () => nameBtn.classList.remove('playing');
       }
-
       window.speechSynthesis.speak(utterance);
+    } catch (e) {}
+  }
+
+  function playConfidentialVoice() {
+    if (!soundEnabled) return;
+    if (!confidentialAudio) {
+      confidentialAudio = new Audio('confidential.mp3?v=20261121_alpha30');
+      confidentialAudio.preload = 'auto';
+    }
+    try {
+      confidentialAudio.currentTime = 0;
+      const playPromise = confidentialAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          speakSpecialVoice('Confidential. This project is enterprise client protected under non-disclosure agreement.');
+        });
+      }
     } catch (e) {
-      // SpeechSynthesis gracefully caught
+      speakSpecialVoice('Confidential. This project is enterprise client protected under non-disclosure agreement.');
     }
   }
 
@@ -1424,7 +1517,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const now = audioCtx.currentTime;
 
       if (type === 'cyberClick' || type === 'click' || type === 'dodge') {
-        // High-tech futuristic tactile chirp (Dual Harmonic Sweep)
         const osc1 = audioCtx.createOscillator();
         const osc2 = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -1457,7 +1549,6 @@ document.addEventListener('DOMContentLoaded', () => {
         osc2.stop(now + 0.09);
 
       } else if (type === 'powerChime') {
-        // Major Triad Ascension Chime (D5 -> F#5 -> A5) for Primary Buttons
         const chord = [587.33, 739.99, 880.00];
         chord.forEach((freq, idx) => {
           const osc = audioCtx.createOscillator();
@@ -1477,7 +1568,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
       } else if (type === 'laserTick') {
-        // High-frequency holographic laser blip for tech chips
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
 
@@ -1495,7 +1585,6 @@ document.addEventListener('DOMContentLoaded', () => {
         osc.stop(now + 0.04);
 
       } else if (type === 'hover') {
-        // Soft ambient feedback
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
 
@@ -1517,26 +1606,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Global Click Event for Special Voice & Cyber Sound FX
+  // Global Click Event for Tactile Sound FX
   document.addEventListener('click', (e) => {
     initAudio();
-
-    // Welcome voice on very first user interaction
-    if (!welcomeSpoken) {
-      welcomeSpoken = true;
-      setTimeout(() => {
-        speakSpecialVoice("Hello! Welcome to Abhijit More's 3D Portfolio");
-      }, 350);
-    }
 
     const target = e.target.closest('a, button, .btn, .card, .tech-chip, .skill-chip-item, .badge-3d-mode, .floating-chip, .stat-item, .name-audio-btn');
 
     if (target) {
-      // Check for Confidential Project Button (User requested: "Cross-Platform Mobile Apps- when clicked on this say confidential.")
+      // Check for Confidential Project Button
       if (target.id === 'confidential-mobile-btn' || target.closest('#confidential-mobile-btn')) {
         playAudioFx('dodge');
         showToast('🔒 Confidential: Enterprise Mobile App (Protected under NDA)');
-        speakSpecialVoice('Confidential. This project is enterprise client protected under non-disclosure agreement.');
+        playConfidentialVoice();
         return;
       }
 
@@ -1546,25 +1627,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Check for primary CTAs
-      if (target.classList.contains('btn-primary') || target.getAttribute('href') === '#contact') {
+      // Check for primary CTAs & links (Audio chime feedback only, no accidental child speech)
+      if (target.classList.contains('btn-primary') || target.getAttribute('href') === '#contact' || target.getAttribute('href')?.includes('wa.me') || target.id === 'copy-email-btn' || target.id === 'back-to-top') {
         playAudioFx('powerChime');
-        speakSpecialVoice('Connecting with Abhijit More');
-      } else if (target.getAttribute('href')?.includes('wa.me')) {
-        playAudioFx('powerChime');
-        speakSpecialVoice('Opening WhatsApp chat with Abhijit More');
-      } else if (target.id === 'copy-email-btn') {
-        playAudioFx('powerChime');
-        speakSpecialVoice('Email copied to clipboard');
-      } else if (target.id === 'toggle-3d-speed') {
-        playAudioFx('powerChime');
-        // Let the speed toggle handler announce the exact mode
-      } else if (target.getAttribute('href')?.includes('linkedin') || target.getAttribute('href')?.includes('github')) {
-        playAudioFx('powerChime');
-        speakSpecialVoice('Opening profile');
-      } else if (target.id === 'back-to-top') {
-        playAudioFx('powerChime');
-        speakSpecialVoice('Returning to top');
       } else if (target.classList.contains('skill-chip-item') || target.classList.contains('tech-chip')) {
         playAudioFx('laserTick');
       } else {
@@ -1575,7 +1640,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Dedicated Name Audio Pronunciation & Full Intro Handler (Click to Play, Click again to Stop)
+  // Dedicated Name Audio Pronunciation & Full Intro Handler
   const playNameBtn = document.getElementById('play-name-audio');
   if (playNameBtn) {
     playNameBtn.addEventListener('click', (e) => {
@@ -1592,11 +1657,11 @@ document.addEventListener('DOMContentLoaded', () => {
       initAudio();
       playAudioFx('dodge');
       showToast('🔒 Confidential: Enterprise Mobile App (Protected under NDA)');
-      speakSpecialVoice('Confidential. This project is enterprise client protected under non-disclosure agreement.');
+      playConfidentialVoice();
     });
   }
 
-  // Sound Toggle Handler (User requested: "sound icon de fakt chalu ase tr sound on disel nahi tr band disel ass kr")
+  // Sound Toggle Handler
   const fxToggle = document.getElementById('sound-fx-toggle');
   const soundIcon = document.getElementById('sound-icon');
 
@@ -1628,7 +1693,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Initialize FX button from localStorage or default true
   const savedFx = localStorage.getItem('portfolio-fx');
   updateFxUi(savedFx !== 'false', false);
 
@@ -1642,7 +1706,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Day / Night Theme Toggle Handler (User requested: "day/night theme add kr.")
+  // Day / Night Theme Toggle Handler
   const themeToggle = document.getElementById('theme-toggle');
   const themeIcon = document.getElementById('theme-icon');
 
@@ -1661,7 +1725,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Check saved theme (default dark)
   const savedTheme = localStorage.getItem('portfolio-theme') || 'dark';
   applyTheme(savedTheme, false);
 
@@ -1672,22 +1735,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const newTheme = currentTheme === 'light' ? 'dark' : 'light';
       localStorage.setItem('portfolio-theme', newTheme);
       applyTheme(newTheme, true);
-    });
-  }
-
-  // Wire Speed Toggle to Special Voice
-  const speedToggle = document.getElementById('toggle-3d-speed');
-  if (speedToggle) {
-    speedToggle.addEventListener('click', () => {
-      setTimeout(() => {
-        if (speedMultiplier === 2.5) {
-          speakSpecialVoice('Warp speed 3D activated');
-        } else if (speedMultiplier === 5) {
-          speakSpecialVoice('Hyperdrive 3D engaged');
-        } else {
-          speakSpecialVoice('Normal 3D orbit restored');
-        }
-      }, 100);
     });
   }
 });
