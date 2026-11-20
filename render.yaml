@@ -1,0 +1,15 @@
+services:
+  # 3D Interactive Portfolio (Static Site)
+  - type: web
+    name: abhijit-more-portfolio
+    runtime: static
+    buildCommand: ""
+    staticPublishPath: ./
+    pullRequestPreviewsEnabled: true
+    domains:
+      - moreabhijit.in
+      - www.moreabhijit.in
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
