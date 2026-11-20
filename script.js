@@ -687,7 +687,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderAvatarGyro = () => {
       curAvatarRotX += (targetAvatarRotX - curAvatarRotX) * 0.08;
       curAvatarRotY += (targetAvatarRotY - curAvatarRotY) * 0.08;
-      avatarCard.style.transform = `rotateX(${curAvatarRotX.toFixed(2)}deg) rotateY(${curAvatarRotY.toFixed(2)}deg) translateZ(28px)`;
+
+      const isSmallMobile = window.innerWidth <= 480;
+      const isMobile = window.innerWidth <= 768;
+      const baseScale = isSmallMobile ? 0.64 : (isMobile ? 0.78 : 1.0);
+
+      avatarCard.style.transform = `scale(${baseScale}) rotateX(${curAvatarRotX.toFixed(2)}deg) rotateY(${curAvatarRotY.toFixed(2)}deg) translateZ(28px)`;
       requestAnimationFrame(renderAvatarGyro);
     };
     renderAvatarGyro();

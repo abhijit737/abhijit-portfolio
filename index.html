@@ -142,7 +142,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css" />
 
   <!-- Stylesheet with Cache Busting -->
-  <link rel="stylesheet" href="style.css?v=20261121_mobile_alpha_voice" />
+  <link rel="stylesheet" href="style.css?v=20261121_mobile_perfect" />
 
   <!-- Critical Inlined Layout for 8 Orbiting Chips & Skills Badges to Prevent Any Cache Lag -->
   <style>
@@ -161,24 +161,37 @@
     .chip-8 { top: 5px !important; left: -115px !important; transform: translateZ(45px) !important; animation: float3D 4s ease-in-out infinite !important; }
     .chip-1:hover, .chip-5:hover { transform: translateX(-50%) translateZ(60px) scale(1.08) !important; }
 
-    /* Mobile scaling for orbiting chips to eliminate overflow while preserving 3D orbit */
+    /* Mobile scaling for 3D stage and orbiting chips to eliminate overflow while preserving 3D orbit */
     @media (max-width: 768px) {
-      .avatar-container {
-        margin: 2.25rem auto 1.5rem !important;
+      .hero-visual {
+        width: 100% !important;
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
-        width: 100% !important;
         overflow: visible !important;
       }
-      .avatar-wrapper {
-        transform: scale(0.8) !important;
+      .hologram-3d-stage {
+        width: 100% !important;
+        max-width: 360px !important;
+        height: 380px !important;
+        margin: 1rem auto !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
       }
+      .ring-outer { width: 320px !important; height: 320px !important; }
+      .ring-middle { width: 270px !important; height: 270px !important; }
+      .ring-inner { width: 220px !important; height: 220px !important; }
     }
     @media (max-width: 480px) {
-      .avatar-wrapper {
-        transform: scale(0.68) !important;
+      .hologram-3d-stage {
+        max-width: 320px !important;
+        height: 330px !important;
+        margin: 0.5rem auto !important;
       }
+      .ring-outer { width: 280px !important; height: 280px !important; }
+      .ring-middle { width: 235px !important; height: 235px !important; }
+      .ring-inner { width: 190px !important; height: 190px !important; }
     }
 
     /* Skills Section Clean Spacing & Dark Glass Capsules */
@@ -1561,6 +1574,6 @@
   <div class="toast" id="toast"></div>
 
   <!-- JavaScript with Cache Busting -->
-  <script src="script.js?v=20261121_mobile_alpha_voice"></script>
+  <script src="script.js?v=20261121_mobile_perfect"></script>
 </body>
 </html>

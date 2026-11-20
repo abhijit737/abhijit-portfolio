@@ -2334,37 +2334,72 @@ select.form-input option {
     width: 100% !important;
   }
 
+  .container {
+    padding: 0 1rem !important;
+  }
+
+  .hero-badge {
+    max-width: 100% !important;
+    white-space: normal !important;
+    text-align: center !important;
+    justify-content: center !important;
+    padding: 0.4rem 0.85rem !important;
+  }
+
+  .badge-text {
+    font-size: 0.78rem !important;
+    line-height: 1.4 !important;
+  }
+
   .hero-title {
-    font-size: 2.35rem;
+    font-size: 2.25rem;
     line-height: 1.18;
   }
 
   .hero-actions {
-    flex-direction: column;
-    width: 100%;
-    max-width: 340px;
-    margin: 1.5rem auto 0;
-    gap: 0.85rem;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 320px !important;
+    margin: 1.25rem auto 0 !important;
+    gap: 0.75rem !important;
+    align-items: center !important;
   }
 
   .hero-actions .btn {
-    width: 100%;
-    justify-content: center;
+    width: 100% !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 0.9rem !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
   }
 
-  .avatar-container {
-    margin: 2rem auto 1.5rem !important;
+  .btn-whatsapp {
+    font-size: 0.85rem !important;
+    padding: 0.75rem 0.75rem !important;
+    white-space: nowrap !important;
+  }
+
+  .hero-visual {
+    width: 100% !important;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
-    width: 100% !important;
     overflow: visible !important;
   }
 
-  .avatar-wrapper {
-    transform: scale(0.8) !important;
-    transform-origin: center center !important;
+  .hologram-3d-stage {
+    width: 100% !important;
+    max-width: 360px !important;
+    height: 380px !important;
+    margin: 1rem auto !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
   }
+
+  .ring-outer { width: 320px !important; height: 320px !important; }
+  .ring-middle { width: 270px !important; height: 270px !important; }
+  .ring-inner { width: 220px !important; height: 220px !important; }
 
   .services-grid,
   .projects-grid {
@@ -2411,21 +2446,16 @@ select.form-input option {
     flex-direction: column;
     text-align: center;
   }
-
-  .hologram-3d-stage {
-    transform: scale(0.85);
-  }
 }
 
 @media (max-width: 480px) {
+  .container {
+    padding: 0 0.85rem !important;
+  }
+
   .hero-title {
     font-size: 1.95rem;
     line-height: 1.2;
-  }
-
-  .avatar-wrapper {
-    transform: scale(0.68) !important;
-    transform-origin: center center !important;
   }
 
   .hero-chips {
@@ -2435,9 +2465,19 @@ select.form-input option {
   }
 
   .hero-typewriter-container {
-    font-size: 0.92rem;
+    font-size: 0.88rem;
     padding: 0.4rem 0.75rem;
   }
+
+  .hologram-3d-stage {
+    max-width: 320px !important;
+    height: 330px !important;
+    margin: 0.5rem auto !important;
+  }
+
+  .ring-outer { width: 280px !important; height: 280px !important; }
+  .ring-middle { width: 235px !important; height: 235px !important; }
+  .ring-inner { width: 190px !important; height: 190px !important; }
 
   .project-actions {
     flex-direction: column;
